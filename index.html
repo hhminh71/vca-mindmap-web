@@ -46,7 +46,7 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.15.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.15.4"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -95,42 +95,39 @@
 
         window.onload = loadDynamicMindmap;
 
-        // Hàm xuất ảnh độ phân giải cao (Nhân 3 lần)
+        // Hàm xuất ảnh độ phân giải cao bằng html2canvas
         function downloadHighResImage() {
-            const node = document.getElementById('markmap');
-            const scale = 3; // Nhân 3 độ phân giải để chữ sắc nét tuyệt đối khi zoom
-            
-            // Đổi chữ nút thành Đang xử lý để người dùng biết
             const btn = document.querySelector('.download-btn');
             const originalText = btn.innerText;
-            btn.innerText = "⏳ Đang xuất ảnh...";
+            btn.innerText = "⏳ Đang xử lý...";
             btn.style.pointerEvents = "none";
+            
+            // Tạm ẩn nút bấm đi để ảnh xuất ra không bị dính hình nút tải
+            btn.style.visibility = 'hidden';
 
-            domtoimage.toPng(node, {
-                height: node.offsetHeight * scale,
-                width: node.offsetWidth * scale,
-                style: {
-                    transform: `scale(${scale})`,
-                    transformOrigin: 'top left',
-                    width: node.offsetWidth + 'px',
-                    height: node.offsetHeight + 'px',
-                    background: '#f5f7fa' // Màu nền chuẩn của trang web
-                }
-            })
-            .then(function (dataUrl) {
-                // Trả lại trạng thái nút
+            // Chụp toàn bộ khu vực hiển thị (bao gồm cả background)
+            const captureArea = document.querySelector('.main-area');
+
+            html2canvas(captureArea, {
+                scale: 3, // Nhân 3 chất lượng (Nét căng)
+                useCORS: true, // Xử lý lỗi bảo mật Cross-Origin của trình duyệt
+                backgroundColor: '#f5f7fa',
+                logging: false
+            }).then(function(canvas) {
+                // Hiện lại nút bấm sau khi chụp xong
+                btn.style.visibility = 'visible';
                 btn.innerText = originalText;
                 btn.style.pointerEvents = "auto";
 
-                // Tạo link tải ảo và tự động click
+                // Tự động tải ảnh về
                 const link = document.createElement('a');
                 link.download = 'SoDoToChuc_CTIA_HD.png';
-                link.href = dataUrl;
+                link.href = canvas.toDataURL('image/png');
                 link.click();
-            })
-            .catch(function (error) {
+            }).catch(function(error) {
                 console.error('Lỗi xuất ảnh:', error);
-                alert("Đã xảy ra lỗi khi tải ảnh. Vui lòng thử lại!");
+                alert("Đã xảy ra lỗi khi tạo ảnh! Bạn vui lòng thử lại nhé.");
+                btn.style.visibility = 'visible';
                 btn.innerText = originalText;
                 btn.style.pointerEvents = "auto";
             });
